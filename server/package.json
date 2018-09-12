@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec babel-node src/index.js",
+    "start": "nodemon index.js",
     "test-server": "TEST_DATABASE=mytestdatabase npm start",
     "test": "mocha --require babel-core/register 'src/**/*.spec.js'"
   },
@@ -12,8 +12,17 @@
   "author": "“Robin <hello@rwieruch.com”> (https://www.robinwieruch.de)",
   "license": "ISC",
   "dependencies": {
+    "apollo-cache-inmemory": "^1.2.10",
+    "apollo-client": "^2.4.2",
+    "apollo-link-http": "^1.5.4",
     "apollo-server": "^2.0.0-rc.7",
     "apollo-server-express": "^2.0.0-rc.7",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.0.2",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-react": "^6.24.1",
+    "babel-register": "^6.26.0",
     "bcrypt": "^3.0.0",
     "cors": "^2.8.4",
     "dataloader": "^1.4.0",
@@ -22,7 +31,13 @@
     "graphql": "^14.0.0-rc.2",
     "graphql-resolvers": "^0.2.2",
     "jsonwebtoken": "^8.3.0",
+    "node-fetch": "^2.2.0",
+    "path": "^0.12.7",
     "pg": "^7.4.3",
+    "react": "^16.5.0",
+    "react-apollo": "^2.1.11",
+    "react-dom": "^16.5.0",
+    "react-router-dom": "^4.3.1",
     "sequelize": "^4.38.0"
   },
   "devDependencies": {

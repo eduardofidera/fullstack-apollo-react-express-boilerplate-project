@@ -12,9 +12,60 @@ import resolvers from './resolvers';
 import models, { sequelize } from './models';
 import loaders from './loaders';
 
+// react ssr related
+import React from 'react';
+import { renderToString, renderToStaticMarkup } from "react-dom/server";
+import { StaticRouter } from "react-router-dom";
+import { ApolloProvider, getDataFromTree } from 'react-apollo';
+
+import { ApolloClient } from 'apollo-client'
+import { InMemoryCache } from 'apollo-cache-inmemory';
+import { HttpLink } from 'apollo-link-http'
+
+import path from 'path';
+import fetch from 'node-fetch';
+import App from '../../client/src/components/App';
+
 const app = express();
 
+const ssrApp = express();
+
+ssrApp.use(express.static(path.resolve( __dirname, "../../client/build/static")));
+
 app.use(cors());
+
+ssrApp.get('/*', (req, res) => {
+  const client = new ApolloClient({
+    ssrMode: true,
+    link: new HttpLink({
+        fetch,
+        uri: 'http://localhost:8000/graphql'
+    }),
+    headers: {
+        cookie: req.header('Cookie'),
+    },
+    cache: new InMemoryCache(),
+  });
+
+  const context = {};
+  const Application = (
+      <ApolloProvider client={client}>
+          <StaticRouter context={context} location={req.url}>
+              <App />
+          </StaticRouter>
+      </ApolloProvider>
+  );
+
+  getDataFromTree(Application).then(() => {
+      const content = renderToString(Application);
+      const initialState = client.extract();
+      const html = <Html content={content} state={initialState} />;
+
+      res.status(200);
+      res.send(`<!DOCTYPE html>\n${renderToStaticMarkup(html)}`);
+      res.end();
+  });
+})
 
 const getMe = async req => {
   const token = req.headers['x-token'];
@@ -80,10 +131,14 @@ sequelize.sync({ force: isTest || isProduction }).then(async () => {
   if (isTest || isProduction) {
     createUsersWithMessages(new Date());
   }
-
-  httpServer.listen({ port }, () => {
-    console.log(`Apollo Server on http://localhost:${port}/graphql`);
+  
+  httpServer.listen(port, () => {
+    console.log('Apollo Server on http://localhost:' + port + '/graphql');
   });
+
+  ssrApp.listen(3000, () => {
+    console.log('app is running on port 3000!')
+  })
 });
 
 const createUsersWithMessages = async date => {
@@ -126,3 +181,28 @@ const createUsersWithMessages = async date => {
     },
   );
 };
+
+
+const Html = ({ content, state }) => {
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="stylesheet" type="text/css" href="/styles.css" />
+        <title>React App</title>
+      </head>
+      <body>
+        <noscript>
+          You need to enable JavaScript to run this app.
+        </noscript>
+        <div id="root" dangerouslySetInnerHTML={{ __html: content }}></div>
+        <script dangerouslySetInnerHTML={{
+            __html: `window.__APOLLO_STATE__=${JSON.stringify(state).replace(/</g, '\\u003c')};`,
+        }} />
+        <script type="text/javascript" src="./js/main.0354a3c9.js"></script>
+      </body>
+    </html>
+  );
+}

@@ -10,6 +10,7 @@ import { onError } from 'apollo-link-error';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 
 import App from './components/App';
+import { BrowserRouter } from 'react-router-dom';
 import { signOut } from './components/SignOut';
 import registerServiceWorker from './registerServiceWorker';
 
@@ -68,16 +69,18 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 
 const link = ApolloLink.from([authLink, errorLink, terminatingLink]);
 
-const cache = new InMemoryCache();
+const cache = new InMemoryCache().restore(window.__APOLLO_STATE__);
 
 const client = new ApolloClient({
   link,
-  cache,
+  cache
 });
 
-ReactDOM.render(
+ReactDOM.hydrate(
   <ApolloProvider client={client}>
+    <BrowserRouter>
     <App />
+    </BrowserRouter>
   </ApolloProvider>,
   document.getElementById('root'),
 );
